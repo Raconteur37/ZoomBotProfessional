@@ -65,12 +65,6 @@ while (run):
         else:
             print("You have no classes!")
 
-
-
-
-
-
-
     if(option == 2):
         adding = True
         className = input("Input class name: EX (Pre cal): ")
@@ -97,7 +91,6 @@ while (run):
             for x in check:
                 print(x)
                 print(getInstanceFromDb(x,1))
-
 
     if (option == 4):
         run = False
