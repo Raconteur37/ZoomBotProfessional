@@ -82,6 +82,16 @@ def getInstanceFromDb(a:str,index):
     a = a.replace(" ","")
     return(a)
 
+def cleanDbTable(a:str):
+    a = str(a)
+    a = a.replace("[","")
+    a = a.replace("]","")
+    a = a.replace("(","")
+    a = a.replace(")","")
+    a = a.replace(",","")
+    a = a.replace("'","")
+    return(a)
+
 personName = str.lower((input(f"{colors.BOLD}What is your name?{colors.END} EX (John M): ")))
 c.execute('SELECT * FROM classes WHERE name IN (SELECT name FROM classes WHERE name = ?)', (personName,))
 check = c.fetchone()
@@ -93,7 +103,7 @@ temp = personName.split(" ")
 print(f"{colors.BOLD}Welcome {colors.YELLOW}{temp[0]}.{colors.END}")
 run = True
 while (run):
-    print(f"{colors.CYAN}{colors.BOLD}Choose some options: {colors.END}\n 1. List all classes to access \n 2. Add a class \n 3. Edit a class \n 4. Remove a class \n 5. {colors.WARNING}{colors.BOLD}Exit{colors.END}")
+    print(f"{colors.CYAN}{colors.BOLD}Choose some options: {colors.END}{colors.BOLD}\n 1. List all classes to access \n 2. Add a class \n 3. Edit a class \n 4. Remove a class \n 5. Remove a user \n 6. {colors.WARNING}{colors.BOLD}Exit{colors.END}")
     option = int(input("Choose an option: "))
 
     if (option == 1):
@@ -133,77 +143,109 @@ while (run):
             print("Cannot add duplicate classes!")
 
     if (option == 3):
-        c.execute('SELECT * FROM classes WHERE name IN (SELECT name FROM classes WHERE name = ?)', (personName,))
-        check = c.fetchall()
-        if len(check) > 1:
-            print("Here are your classes: ")
-            z = 1
-            classNames = []
-            go = False
-            while (z < len(check)):
-                print(f"{colors.UNDERLINE}{z}. {getInstanceFromDb(check[z],1)} at {getInstanceFromDb(check[z],2)} {getInstanceFromDb(check[z],3)} with a link of {getInstanceFromDb(check[z],4)}{colors.END}")
-                classNames.append(str.lower((getInstanceFromDb(check[z],1))))
-                z = z + 1
-            edit = input("What class would you like to edit? (The exact name that's displayed): ")
-            edit = edit.replace(" ","")
-            testEdit = str.lower(edit)
-            v = 0
-            while v < len(classNames):
-                if classNames[v] == testEdit:
-                    go = True
-                    v = len(classNames)
-                v = v + 1
+            c.execute('SELECT * FROM classes WHERE name IN (SELECT name FROM classes WHERE name = ?)', (personName,))
+            check = c.fetchall()
+            check = sortClasses(check)
+            if len(check) > 1:
+                go = True
+                print(f"Here is a list of your classes: ")
+                print(f"")
+                disNum = 1
+                z = 0
+                while (z < len(check)):
+                    print(f"-={colors.BOLD}{colors.UNDERLINE} {disNum}. {getInstanceFromDb(check[z],1)} at {getInstanceFromDb(check[z],2)} {getInstanceFromDb(check[z],3)} with a link of {getInstanceFromDb(check[z],4)}{colors.END}=-")
+                    z = z + 1
+                    disNum = disNum + 1
+                print(f"")
+            else:
+                print(f"{colors.WARNING}You have no classes!{colors.END}")
+                go = False
             if(go):
-                editType = input("What do you want to edit? EX (name, time, time of day, or link): ")
+                edit = input("What class would you like to edit? EX (1 or 3): ")
+                edit = int(edit) - 1
+                theClass = check[edit]
+                className = getInstanceFromDb(theClass,1)
+                classTime = getInstanceFromDb(theClass,2)
+                classTimeOfDay = getInstanceFromDb(theClass,3)
+                classLink = getInstanceFromDb(theClass,4)
+                editType = input(f"What do you want to edit about {className}? EX (name, time, time of day, or link): ")
                 if (str.lower(editType) == "name"):
-                    editName = input(f"What do you want the new name for {edit} to be? ")
+                    editName = input(f"What do you want the new name for {className} to be? ")
                     with conn:
                         c.execute(
                         'UPDATE classes SET class = ? WHERE class= ?', 
-                        (editName, edit,))
-                    print(f"Updated {edit} to now be called {editName}")
+                        (editName, className,))
+                    print(f"Updated {className} to now be called {editName}")
                 if (str.lower(editType) == "time"):
-                    editTime = input(f"What do you want the new time for {edit} to be? EX (10:30): ")
+                    editTime = input(f"What do you want the new time for {className} to be? Current({classTime}): ")
                     with conn:
                         c.execute(
                         'UPDATE classes SET time = ? WHERE class= ?', 
-                        (editTime, edit,))
-                    print(f"Updated {edit}'s time to {editTime}")
+                        (editTime, className,))
+                    print(f"Updated {className}'s time to {editTime}")
                 if (str.lower(editType) == "time of day"):
-                    editTimeOfDay = input(f"What do you want the new time of day for {edit} to be? EX (AM or PM): ")
+                    editTimeOfDay = input(f"What do you want the new time of day for {className} to be? Current({classTimeOfDay}): ")
                     with conn:
                         c.execute(
                         'UPDATE classes SET timeofday = ? WHERE class= ?', 
-                        (editTimeOfDay, edit,))
-                    print(f"Updated {edit}'s time of day to {editTimeOfDay}")
+                        (editTimeOfDay, className,))
+                    print(f"Updated {className}'s time of day to {editTimeOfDay}")
                 if (str.lower(editType) == "link"):
-                    editLink = input(f"What do you want the new link for {edit} to be? EX (zoom.com): ")
+                    editLink = input(f"What do you want the new link for {className} to be? EX (zoom.com): ")
                     with conn:
                         c.execute(
                         'UPDATE classes SET link = ? WHERE class= ?', 
-                        (editLink, edit,))
-                    print(f"{colors.BOLD}{colors.SUCCESS}Updated {edit}'s link to {editLink}{colors.END}")
-                else:
-                    print(f"{colors.WARNING}{colors.BOLD}That's not a valid argument!{colors.END}")
+                        (editLink, className,))
+                    print(f"{colors.BOLD}{colors.SUCCESS}Updated {className}'s link to {editLink}{colors.END}")
             else:
-                print(f"{colors.WARNING}{colors.BOLD}That's not a class!{colors.END}")        
-        else:
-            
-            print(f"{colors.WARNING}{colors.BOLD}You dont have any classes! {colors.END}")
+                print(f"{colors.WARNING}{colors.BOLD}There was an error!{colors.END}")        
 
     if (option == 4):
-        print()
-        
-
-    if(option == 6):
         c.execute('SELECT * FROM classes WHERE name IN (SELECT name FROM classes WHERE name = ?)', (personName,))
         check = c.fetchall()
-        if check is not None:
-            for x in check:
-                print(x)
-                print(getInstanceFromDb(x,1))
+        check = sortClasses(check)
+        if len(check) > 1:
+            print(f"Here is a list of your classes: ")
+            print(f"")
+            disNum = 1
+            z = 0
+            while (z < len(check)):
+                print(f"-={colors.BOLD}{colors.UNDERLINE} {disNum}. {getInstanceFromDb(check[z],1)} at {getInstanceFromDb(check[z],2)} {getInstanceFromDb(check[z],3)} {colors.END}=-")
+                z = z + 1
+                disNum = disNum + 1
+            print(f"")
+            option = input(f"What class do you want to remove? EX (1 or 3): ")
+            option = int(option) - 1
+            theClass = check[option]
+            className = getInstanceFromDb(theClass,1)
+            with conn:
+                c.execute('DELETE FROM classes WHERE class = ?',(className,))
+            print(f"{colors.BOLD}{colors.SUCCESS}Removed {className}{colors.END}")
+        else:
+            print(f"{colors.WARNING}You have no classes!{colors.END}")
 
-    if (option == 5):
+    if(option == 5):
+        c.execute('SELECT name FROM classes') 
+        check = c.fetchall()
+        check = list(dict.fromkeys(check))
+        print(f"Here is a list of your classes: ")
+        print(f"")
+        disNum = 1
+        for x in check:
+            print(f"-={colors.BOLD}{colors.UNDERLINE} {disNum}. {cleanDbTable(x)} {colors.END}=-")
+            disNum = disNum + 1
+        print(f"")
+        option = input(f"What user do you want to remove? EX (1 or 3): ")
+        option = int(option) - 1
+        remove = check[option]
+        remove = cleanDbTable(remove)
+        with conn:
+            c.execute('DELETE FROM classes WHERE name = ?',(remove,))
+        print(f"{colors.BOLD}{colors.SUCCESS}Removed {remove}{colors.END}")
+            
+
+
+    if (option == 6):
         run = False
         print("You have exited")
 
